@@ -1,5 +1,5 @@
 // functions/api/zentao.js
-// Cloudflare Pages Function - 工时 API 代理
+// Cloudflare Pages Function - 工时 API 代理（修复版）
 
 export async function onRequest(context) {
   const { request } = context;
@@ -51,17 +51,24 @@ export async function onRequest(context) {
   }
 
   try {
-    // 请求原始工时 API
+    // 方法1：尝试使用 HTTP（可能被 Cloudflare 阻止）
     const apiUrl = `http://221.122.67.145:8083/zentao/getDataByName?name=${encodeURIComponent(name)}&ftime=${ftime}&ttime=${ttime}`;
     
     console.log('Requesting:', apiUrl);
     
+    // 使用更宽松的 fetch 选项
     const response = await fetch(apiUrl, {
+      method: 'GET',
       headers: {
-        'User-Agent': 'Cloudflare-Worker-Proxy'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json, text/plain, */*',
       },
-      // 添加超时设置
-      signal: AbortSignal.timeout(30000) // 30秒超时
+      // Cloudflare Workers 特定选项
+      cf: {
+        cacheTtl: 0,
+        cacheEverything: false,
+      },
+      signal: AbortSignal.timeout(30000)
     });
 
     console.log('Response status:', response.status);
@@ -75,7 +82,8 @@ export async function onRequest(context) {
         status: response.status,
         statusText: response.statusText,
         detail: errorText,
-        requestUrl: apiUrl
+        requestUrl: apiUrl,
+        suggestion: '如果持续失败，建议后端 API 启用 HTTPS'
       }), {
         status: response.status,
         headers: {
@@ -93,7 +101,11 @@ export async function onRequest(context) {
     } else {
       const text = await response.text();
       console.log('Non-JSON response:', text);
-      data = { raw: text };
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        data = { raw: text };
+      }
     }
 
     console.log('API response data:', data);
@@ -111,16 +123,32 @@ export async function onRequest(context) {
   } catch (error) {
     console.error('工时 API 请求失败:', error);
     
-    // 检查是否是超时错误
+    // 检查是否是 Cloudflare 的 1003 错误
+    const isCloudflareBlock = error.message.includes('1003') || 
+                              error.message.includes('Forbidden') ||
+                              error.message.includes('ERR_BLOCKED_BY_CLIENT');
+    
     const isTimeout = error.name === 'AbortError' || error.message.includes('timeout');
     
+    let errorMessage = '请求失败';
+    let suggestion = '';
+    
+    if (isCloudflareBlock) {
+      errorMessage = 'Cloudflare 阻止了 HTTP 请求';
+      suggestion = '建议：1) 为后端 API 配置 HTTPS，或 2) 使用其他代理服务（如 Vercel、Railway）';
+    } else if (isTimeout) {
+      errorMessage = '请求超时';
+      suggestion = '目标服务器响应超时，请检查网络或服务器状态';
+    }
+    
     return new Response(JSON.stringify({
-      error: isTimeout ? '请求超时' : '请求失败',
+      error: errorMessage,
       message: error.message,
       name: error.name,
-      stack: error.stack,
+      suggestion: suggestion,
       type: 'proxy_error',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      note: 'Cloudflare Workers 默认不支持 HTTP 请求，仅支持 HTTPS'
     }), {
       status: 500,
       headers: {
