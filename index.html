@@ -411,9 +411,9 @@
     </div>
     
     <script>
-        // 使用 Cloudflare Worker 代理解决 CORS 问题
-        // 将此 URL 替换为你的 Cloudflare Worker URL
+        // 使用 Cloudflare Pages Function 代理
         const HOLIDAY_API_PROXY = '/api/holiday';
+        const ZENTAO_API_PROXY = '/api/zentao';
         
         function initYearSelector() {
             const yearSelect = document.getElementById('year');
@@ -477,7 +477,8 @@
                 const lastDay = new Date(year, month, 0).getDate();
                 const endDate = formatDate(year, month, lastDay);
                 
-                const apiUrl = `http://221.122.67.145:8083/zentao/getDataByName?name=${encodeURIComponent(name)}&ftime=${startDate}&ttime=${endDate}`;
+                // 使用代理 API
+                const apiUrl = `${ZENTAO_API_PROXY}?name=${encodeURIComponent(name)}&ftime=${startDate}&ttime=${endDate}`;
                 const response = await fetch(apiUrl);
                 
                 if (!response.ok) {
