@@ -411,6 +411,10 @@
     </div>
     
     <script>
+        // 使用 Cloudflare Worker 代理解决 CORS 问题
+        // 将此 URL 替换为你的 Cloudflare Worker URL
+        const HOLIDAY_API_PROXY = '/api/holiday';
+        
         function initYearSelector() {
             const yearSelect = document.getElementById('year');
             const currentYear = new Date().getFullYear();
@@ -438,7 +442,7 @@
         
         async function checkHoliday(dateStr) {
             try {
-                const response = await fetch(`https://holiday.dreace.top?date=${dateStr}`);
+                const response = await fetch(`${HOLIDAY_API_PROXY}?date=${dateStr}`);
                 const data = await response.json();
                 console.log(`${dateStr} 节假日信息:`, data);
                 return data;
@@ -577,21 +581,17 @@
                 
                 console.log(`${dateStr}: holiday=`, holiday, `hours=${hours}`);
                 
-                // 判断是否为真正的节假日（排除补班日）
                 const isRealHoliday = holiday && holiday.isHoliday === true && holiday.note !== '补班工作日';
                 
                 if (dateStr > currentDate) {
-                    // 未来日期
                     dayElement.classList.add('weekend');
                     dayHours.textContent = '-';
                     dayLabel.textContent = '未来';
                 } else if (isRealHoliday && hours === 0) {
-                    // 真正的假期且没有加班
                     dayElement.classList.add('weekend');
                     dayHours.textContent = '-';
                     dayLabel.textContent = holiday.note || '假日';
                 } else if (isRealHoliday && hours > 0) {
-                    // 假期加班（周末或节假日有工时）
                     stats.overtimeDays++;
                     dayElement.classList.add('overtime');
                     dayHours.textContent = hours.toFixed(1) + 'h';
@@ -599,7 +599,6 @@
                     dayLabel.textContent = `${holidayName}加班`;
                     stats.totalHours += hours;
                 } else {
-                    // 工作日
                     stats.workdays++;
                     
                     if (hours === 0) {
