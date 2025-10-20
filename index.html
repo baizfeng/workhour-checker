@@ -506,7 +506,20 @@
                 
             } catch (error) {
                 document.getElementById('loading').style.display = 'none';
-                document.getElementById('error').textContent = `查询失败：${error.message}`;
+                console.error('查询错误详情:', error);
+                
+                // 尝试解析错误响应
+                let errorMsg = `查询失败：${error.message}`;
+                if (error.response) {
+                    try {
+                        const errorData = await error.response.json();
+                        errorMsg = `查询失败：${errorData.error || errorData.message || JSON.stringify(errorData)}`;
+                    } catch (e) {
+                        // JSON 解析失败，使用原始错误信息
+                    }
+                }
+                
+                document.getElementById('error').textContent = errorMsg;
                 document.getElementById('error').style.display = 'block';
             }
         }
