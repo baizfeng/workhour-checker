@@ -576,11 +576,11 @@
     <script>
         // ===== 配置区域 =====
         // 请将下面的 URL 替换为你的 Cloudflare Worker 地址
-        const WORKER_URL = 'https://workhour-api-proxy.zfengbai.workers.dev';
+        const WORKER_URL = 'https://workhour-proxy.zfengbai.workers.dev/';
         // ==================
         
         // 检查是否配置了 Worker URL
-        if (WORKER_URL === 'https://workhour-api-proxy.zfengbai.workers.dev') {
+        if (WORKER_URL === 'https://workhour-proxy.zfengbai.workers.dev/') {
             document.getElementById('configNotice').classList.add('show');
         }
         
@@ -752,7 +752,7 @@
                 document.getElementById('noData').style.display = 'none';
                 
                 let errorMessage = `查询失败：${error.message}`;
-                if (WORKER_URL === 'https://workhour-api-proxy.zfengbai.workers.dev') {
+                if (WORKER_URL === 'https://workhour-proxy.zfengbai.workers.dev/') {
                     errorMessage += '\n\n请先配置 Worker 代理地址！';
                 }
                 
