@@ -575,14 +575,8 @@
     
     <script>
         // ===== 配置区域 =====
-        // 请将下面的 URL 替换为你的 Cloudflare Worker 地址
-        const WORKER_URL = 'https://workhour-proxy.zfengbai.workers.dev/';
-        // ==================
-        
-        // 检查是否配置了 Worker URL
-        if (WORKER_URL === 'https://workhour-proxy.zfengbai.workers.dev/') {
-            document.getElementById('configNotice').classList.add('show');
-        }
+        // Cloudflare Worker 代理地址
+        const WORKER_URL = 'https://workhour-proxy.zfengbai.workers.dev';
         
         // 节假日缓存
         const holidayCache = {};
